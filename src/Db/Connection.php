@@ -47,4 +47,13 @@ class Connection implements ConnectionInterface
     {
         return $this->config;
     }
+
+    public function invoke(callable $call, float $timeout = null)
+    {
+        if ($timeout === null) {
+            $timeout = $this->config->getGetObjectTimeout();
+        }
+
+        return $this->getPool()->invoke($call, $timeout);
+    }
 }

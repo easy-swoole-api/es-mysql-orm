@@ -2,6 +2,7 @@
 
 namespace EasySwoole\ORM;
 
+use Co\MySQL;
 use EasySwoole\Component\Singleton;
 use EasySwoole\Mysqli\QueryBuilder;
 use EasySwoole\ORM\Db\ClientInterface;
@@ -25,23 +26,24 @@ class DbManager
     protected $lastQueryContext = [];
     protected $onQuery;
 
-    public function onQuery(callable $call):DbManager
+    public function onQuery(callable $call) :DbManager
     {
         $this->onQuery = $call;
         return $this;
     }
 
-    function addConnection(ConnectionInterface $connection,string $connectionName = 'default'):DbManager
+    public function addConnection(ConnectionInterface $connection, string $connectionName = 'default') :DbManager
     {
         $this->connections[$connectionName] = $connection;
         return $this;
     }
 
-    function getConnection(string $connectionName = 'default'):?ConnectionInterface
+    public function getConnection(string $connectionName = 'default') :?ConnectionInterface
     {
-        if(isset($this->connections[$connectionName])){
+        if (isset($this->connections[$connectionName])) {
             return $this->connections[$connectionName];
         }
+
         return null;
     }
 
@@ -53,27 +55,30 @@ class DbManager
      * @throws PoolEmpty
      * @throws \Throwable
      */
-    protected function getClient(string $connectionName,float $timeout = null):ClientInterface
+    protected function getClient(string $connectionName, float $timeout = null) :ClientInterface
     {
         $cid = Coroutine::getCid();
-        if(isset($this->transactionContext[$cid][$connectionName])){
+
+        if (isset($this->transactionContext[$cid][$connectionName])) {
             return $this->transactionContext[$cid][$connectionName];
         }
+
         $connection = $this->getConnection($connectionName);
-        if($connection instanceof ConnectionInterface){
+
+        if ($connection instanceof ConnectionInterface) {
             $client = $connection->__getClientPool()->getObj($timeout);
-            if($client){
-                if($client instanceof ClientInterface){
-                    //做名称标记
+            if ($client) {
+                if ($client instanceof ClientInterface) {
+                    // 做名称标记
                     $client->connectionName($connectionName);
                     return $client;
-                }else{
+                } else {
                     throw new Exception("connection : {$connectionName} pool not a EasySwoole\ORM\Db\ConnectionInterface pool");
                 }
-            }else{
+            } else {
                 throw new PoolEmpty("connection : {$connectionName} is empty");
             }
-        }else{
+        } else {
             throw new Exception("connection : {$connectionName} not register");
         }
     }
@@ -84,23 +89,26 @@ class DbManager
      * @param ClientInterface|null $client
      * @throws \Throwable
      */
-    protected function recycleClient(string $connectionName,?ClientInterface $client)
+    protected function recycleClient(string $connectionName, ?ClientInterface $client)
     {
         $cid = Coroutine::getCid();
-        if(isset($this->transactionContext[$cid][$connectionName])){
-            //处于事务中的连接暂时不回收
+
+        if (isset($this->transactionContext[$cid][$connectionName])) {
+            // 处于事务中的连接暂时不回收
             return;
-        }else if($client){
+        } else if ($client) {
             $this->getConnection($connectionName)->__getClientPool()->recycleObj($client);
         }
     }
 
-    function getLastQuery():?QueryBuilder
+    public function getLastQuery(): ?QueryBuilder
     {
         $cid = Coroutine::getCid();
-        if(isset($this->lastQueryContext[$cid])){
+
+        if (isset($this->lastQueryContext[$cid])) {
             return $this->lastQueryContext[$cid];
         }
+
         return null;
     }
 
@@ -113,46 +121,54 @@ class DbManager
      * @throws Exception
      * @throws \Throwable
      */
-    function query(QueryBuilder $builder, bool $raw = false, $connection = 'default', float $timeout = null):Result
+    public function query(QueryBuilder $builder, bool $raw = false, $connection = 'default', float $timeout = null) :Result
     {
         $cid = Coroutine::getCid();
-        if(!isset($this->lastQueryContext[$cid])){
-            Coroutine::defer(function ()use($cid){
+
+        if (!isset($this->lastQueryContext[$cid])) {
+            Coroutine::defer(function () use ($cid) {
                 unset($this->lastQueryContext[$cid]);
             });
         }
-        $this->lastQueryContext[$cid] = $builder;
 
+        $this->lastQueryContext[$cid] = $builder;
         $name = null;
-        if(is_string($connection)){
+
+        if (is_string($connection)) {
             $name = $connection;
             $client = $this->getClient($connection,$timeout);
-        }else if($connection instanceof ClientInterface){
+        } else if ($connection instanceof ClientInterface) {
             $client = $connection;
-        }else{
-            throw new Exception('var $connection not a connectionName or ClientInterface');
+        } else {
+            throw new Exception("var {$connection} not a connectionName or ClientInterface");
         }
-        try{
+
+        try {
             $start = microtime(true);
-            $ret = $client->query($builder,$raw);
-            if($this->onQuery){
+            $ret = $client->query($builder, $timeout);
+
+            if ($this->onQuery) {
                 $temp = clone $builder;
-                call_user_func($this->onQuery,$ret,$temp,$start);
+                call_user_func($this->onQuery, $ret, $temp, $start);
             }
-            if(in_array('SQL_CALC_FOUND_ROWS',$builder->getLastQueryOptions())){
+
+            if (in_array('SQL_CALC_FOUND_ROWS', $builder->getLastQueryOptions())) {
                 $temp = new QueryBuilder();
                 $temp->raw('SELECT FOUND_ROWS() as count');
-                $count = $client->query($temp,true);
-                if($this->onQuery){
-                    call_user_func($this->onQuery,$count,$temp,$start,$client);
+                $count = $client->query($temp, $timeout);
+
+                if ($this->onQuery) {
+                    call_user_func($this->onQuery, $count, $temp, $start, $client);
                 }
+
                 $ret->setTotalCount($count->getResult()[0]['count']);
             }
+
             return $ret;
-        }catch (\Throwable $exception){
+        } catch (\Throwable $exception) {
             throw $exception;
         } finally {
-            if($name){
+            if ($name) {
                 $this->recycleClient($name,$client);
             }
         }
@@ -167,19 +183,21 @@ class DbManager
      * @throws PoolEmpty
      * @throws \Throwable
      */
-    function invoke(callable $call,string $connectionName = 'default',float $timeout = null)
+    public function invoke(callable $call,string $connectionName = 'default',float $timeout = null)
     {
         $client = $this->getClient($connectionName,$timeout);
-        if($client){
-            try{
+
+        if ($client) {
+            try {
                 return call_user_func($call,$client);
-            }catch (\Throwable $exception){
+            } catch (\Throwable $exception) {
                 throw $exception;
-            }finally{
+            } finally {
                 $this->recycleClient($connectionName,$client);
             }
         }
-        return ;
+
+        return null;
     }
 
     /**
@@ -190,41 +208,70 @@ class DbManager
      * @throws PoolEmpty
      * @throws \Throwable
      */
-    public function startTransaction($con = 'default',float $timeout = null):bool
+    public function startTransaction($con = 'default', float $timeout = null) :bool
     {
         $defer = true;
         $name = null;
         $client = null;
-        if($con instanceof ClientInterface){
+
+        if ($con instanceof ClientInterface) {
             $client = $con;
             $name = $client->connectionName();
             $defer = false;
-        }else{
+        } else {
             $name = $con;
         }
+
         $cid = Coroutine::getCid();
-        //检查上下文
-        if(isset($this->transactionContext[$cid][$name])){
+
+        // 检查上下文
+        if (isset($this->transactionContext[$cid][$name])) {
             return true;
         }
-        if(!$client){
+
+        if (!$client) {
             $client = $this->getClient($name,$timeout);
         }
-        try{
+
+        try {
             $builder = new QueryBuilder();
             $builder->startTransaction();
-            $ret = $this->query($builder,true,$client);
-            //外部连接不需要帮忙注册defer清理，需要外部注册者自己做。
-            if($ret->getResult() && $defer){
+
+            if (!isset($this->lastQueryContext[$cid])) {
+                Coroutine::defer(function () use ($cid) {
+                    unset($this->lastQueryContext[$cid]);
+                });
+            }
+
+            $this->lastQueryContext[$cid] = $builder;
+            $start = microtime(true);
+
+            if (!$this->getConnection($name)->getConfig()->isUseMysqli()) {
+                $beginRet = $client->mysqlClient()->begin();
+            } else {
+                $beginRet = $client->mysqlClient()->begin_transaction();
+            }
+
+            $ret = new Result();
+            $ret->setResult($beginRet);
+
+            if ($this->onQuery) {
+                $temp = clone $builder;
+                call_user_func($this->onQuery, $ret, $temp, $start);
+            }
+
+            // 外部连接不需要帮忙注册defer清理，需要外部注册者自己做。
+            if ($ret->getResult() && $defer) {
                 $client->__inTransaction = true;
                 $this->transactionContext[$cid][$name] = $client;
-                Coroutine::defer(function (){
+                Coroutine::defer(function () {
                     $this->transactionDeferExit();
                 });
             }
+
             return $ret->getResult();
-        }catch (\Throwable $exception){
-            $this->recycleClient($name,$client);
+        } catch (\Throwable $exception) {
+            $this->recycleClient($name, $client);
             throw $exception;
         }
     }
@@ -239,10 +286,10 @@ class DbManager
      */
     public function startTransactionWithCount($con = 'default', float $timeout = null)
     {
-        if($con instanceof ClientInterface){
+        if ($con instanceof ClientInterface) {
             $client = $con;
             $name = $client->connectionName();
-        }else{
+        } else {
             $name = $con;
         }
 
@@ -254,6 +301,7 @@ class DbManager
         }
 
         $this->transactionCountContext[$cid][$name]++;
+
         return true;
     }
 
@@ -264,19 +312,20 @@ class DbManager
      */
     public function commitWithCount($con = 'default')
     {
-        if($con instanceof ClientInterface){
+        if ($con instanceof ClientInterface) {
             $client = $con;
             $name = $client->connectionName();
-        }else{
+        } else {
             $name = $con;
         }
 
         $cid = Coroutine::getCid();
         $this->transactionCountContext[$cid][$name]--;
 
-        if ($this->transactionCountContext[$cid][$name] === 0){
+        if ($this->transactionCountContext[$cid][$name] === 0) {
             return $this->commit($con);
         }
+
         return true;
     }
 
@@ -286,20 +335,22 @@ class DbManager
      * @return bool
      * @throws \Throwable
      */
-    public function rollbackWithCount($con = 'default',float $timeout = null)
+    public function rollbackWithCount($con = 'default', float $timeout = null)
     {
-        if($con instanceof ClientInterface){
+        if ($con instanceof ClientInterface) {
             $client = $con;
             $name = $client->connectionName();
-        }else{
+        } else {
             $name = $con;
         }
 
         $cid = Coroutine::getCid();
         $this->transactionCountContext[$cid][$name]--;
-        if ($this->transactionCountContext[$cid][$name] === 0){
+
+        if ($this->transactionCountContext[$cid][$name] === 0) {
             return $this->rollback($con, $timeout);
         }
+
         return true;
     }
 
@@ -308,39 +359,65 @@ class DbManager
      * @return bool
      * @throws \Throwable
      */
-    public function commit($con = 'default'):bool
+    public function commit($con = 'default') :bool
     {
-        $outSideClient = false;
+        $outsideClient = false;
         $cid = Coroutine::getCid();
         $name = null;
         $client = null;
-        if($con instanceof ClientInterface){
+
+        if ($con instanceof ClientInterface) {
             $client = $con;
             $name = $client->connectionName();
-            $outSideClient = true;
-        }else{
+            $outsideClient = true;
+        } else {
             $name = $con;
-            //没有上下文说明没有声明连接事务
-            if(!isset($this->transactionContext[$cid][$name])){
+            // 没有上下文说明没有声明连接事务
+            if (!isset($this->transactionContext[$cid][$name])) {
                 return true;
-            }else{
+            } else {
                 $client = $this->transactionContext[$cid][$name];
             }
         }
-        try{
+
+        try {
             $builder = new QueryBuilder();
             $builder->commit();
-            $ret = $this->query($builder,true,$client);
-            if($ret->getResult() && !$outSideClient){
+
+            if (!isset($this->lastQueryContext[$cid])) {
+                Coroutine::defer(function () use ($cid) {
+                    unset($this->lastQueryContext[$cid]);
+                });
+            }
+
+            $this->lastQueryContext[$cid] = $builder;
+            $start = microtime(true);
+
+            if (!$this->getConnection($name)->getConfig()->isUseMysqli()) {
+                $commitRet = $client->mysqlClient()->commit($this->getConnection($name)->getConfig()->getTimeout());
+            } else {
+                $commitRet = $client->mysqlClient()->commit();
+            }
+
+            $ret = new Result();
+            $ret->setResult($commitRet);
+
+            if ($this->onQuery) {
+                $temp = clone $builder;
+                call_user_func($this->onQuery, $ret, $temp, $start);
+            }
+
+            if ($ret->getResult() && !$outsideClient) {
                 $client->__inTransaction = false;
                 unset($this->transactionContext[$cid][$name]);
                 $this->recycleClient($name,$client);
             }
+
             return $ret->getResult();
-        }catch (\Throwable $exception){
+        } catch (\Throwable $exception) {
             throw $exception;
         } finally {
-            if(isset($this->transactionContext[$cid][$name])){
+            if (isset($this->transactionContext[$cid][$name])) {
                 $client = $this->transactionContext[$cid][$name];
                 unset($this->transactionContext[$cid][$name]);
                 $this->recycleClient($name, $client);
@@ -354,39 +431,65 @@ class DbManager
      * @return bool
      * @throws \Throwable
      */
-    public function rollback($con = 'default',float $timeout = null):bool
+    public function rollback($con = 'default', float $timeout = null) :bool
     {
-        $outSideClient = false;
+        $outsideClient = false;
         $cid = Coroutine::getCid();
         $name = null;
         $client = null;
-        if($con instanceof ClientInterface){
+
+        if ($con instanceof ClientInterface) {
             $client = $con;
             $name = $client->connectionName();
-            $outSideClient = true;
-        }else{
+            $outsideClient = true;
+        } else {
             $name = $con;
-            //没有上下文说明没有声明连接事务
-            if(!isset($this->transactionContext[$cid][$name])){
+            // 没有上下文说明没有声明连接事务
+            if (!isset($this->transactionContext[$cid][$name])) {
                 return true;
-            }else{
+            } else {
                 $client = $this->transactionContext[$cid][$name];
             }
         }
-        try{
+
+        try {
             $builder = new QueryBuilder();
             $builder->rollback();
-            $ret = $this->query($builder,true,$client, $timeout);
-            if($ret->getResult() && !$outSideClient){
+
+            if (!isset($this->lastQueryContext[$cid])) {
+                Coroutine::defer(function () use ($cid) {
+                    unset($this->lastQueryContext[$cid]);
+                });
+            }
+
+            $this->lastQueryContext[$cid] = $builder;
+            $start = microtime(true);
+
+            if (!$this->getConnection($name)->getConfig()->isUseMysqli()) {
+                $rollbackRet = $client->mysqlClient()->rollback($this->getConnection($name)->getConfig()->getTimeout());
+            } else {
+                $rollbackRet = $client->mysqlClient()->rollback();
+            }
+
+            $ret = new Result();
+            $ret->setResult($rollbackRet);
+
+            if ($this->onQuery) {
+                $temp = clone $builder;
+                call_user_func($this->onQuery, $ret, $temp, $start);
+            }
+
+            if ($ret->getResult() && !$outsideClient) {
                 $client->__inTransaction = false;
                 unset($this->transactionContext[$cid][$name]);
-                $this->recycleClient($name,$client);
+                $this->recycleClient($name, $client);
             }
+
             return $ret->getResult();
-        }catch (\Throwable $exception){
+        } catch (\Throwable $exception) {
             throw $exception;
         } finally {
-            if(isset($this->transactionContext[$cid][$name])){
+            if (isset($this->transactionContext[$cid][$name])) {
                 $client = $this->transactionContext[$cid][$name];
                 unset($this->transactionContext[$cid][$name]);
                 $this->recycleClient($name, $client);
@@ -399,34 +502,37 @@ class DbManager
      */
     protected function transactionDeferExit()
     {
-
         $cid = Coroutine::getCid();
-        if(isset($this->transactionContext[$cid])){
+
+        if (isset($this->transactionContext[$cid])) {
             /** @var ClientInterface $con */
-            foreach ($this->transactionContext[$cid] as $con){
+            foreach ($this->transactionContext[$cid] as $con) {
                 $res = false;
-                try{
+
+                try {
                     // 回滚里会删除上下文 下面可以正常回收
                     $res = $this->rollback($con);
-                }catch (\Throwable $exception){
+                } catch (\Throwable $exception) {
                     throw $exception;
                 } finally {
-                    if(!$res){// 在rollback里会回收客户端了
-                        //如果这个阶段的回滚还依旧失败，则废弃这个连接
+                    if (!$res) {
+                        // 在rollback里会回收客户端了
+                        // 如果这个阶段的回滚还依旧失败，则废弃这个连接
                         $this->getConnection($con->connectionName())->__getClientPool()->unsetObj($con);
                     }
                 }
             }
         }
+
         unset($this->transactionContext[$cid]);
     }
 
 
-    public static function isInTransaction(ClientInterface $client):bool
+    public static function isInTransaction(ClientInterface $client) :bool
     {
-        if(isset($client->__inTransaction)){
+        if (isset($client->__inTransaction)) {
             return (bool)$client->__inTransaction;
-        }else{
+        } else {
             return false;
         }
     }

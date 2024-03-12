@@ -8,7 +8,6 @@
 
 namespace EasySwoole\ORM\Tests;
 
-
 use EasySwoole\Mysqli\QueryBuilder;
 use EasySwoole\ORM\Db\Config;
 use EasySwoole\ORM\Db\Connection;
@@ -38,6 +37,24 @@ class ModelCloneCreateTest extends TestCase
         DbManager::getInstance()->addConnection($this->connection);
         $connection = DbManager::getInstance()->getConnection();
         $this->assertTrue($connection === $this->connection);
+        $this->createtTiamstampTestTable();
+    }
+
+    public function createtTiamstampTestTable()
+    {
+        $tableDDL = new Table($this->tableName);
+        $tableDDL->colInt('id', 11)->setIsPrimaryKey()->setIsAutoIncrement();
+        $tableDDL->colVarChar('name', 255);
+        $tableDDL->colTinyInt('age', 1);
+        $tableDDL->colDateTime('create_time')->setIsNotNull(false);
+        $tableDDL->colDateTime('update_time')->setIsNotNull(false);
+        $tableDDL->colInt('create_at', 10)->setIsNotNull(false);
+        $tableDDL->colInt('update_at', 10)->setIsNotNull(false);
+        $tableDDL->setIfNotExists();
+        $sql = $tableDDL->__createDDL();
+        $query = new QueryBuilder();
+        $query->raw($sql);
+        DbManager::getInstance()->query($query);
     }
 
     /**

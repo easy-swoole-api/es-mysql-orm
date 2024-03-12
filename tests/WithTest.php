@@ -1,8 +1,5 @@
 <?php
-
-
 namespace EasySwoole\ORM\Tests;
-
 
 use EasySwoole\Mysqli\QueryBuilder;
 use EasySwoole\ORM\Db\Config;
@@ -15,7 +12,6 @@ use EasySwoole\ORM\Tests\models\TestRelationModel;
 use EasySwoole\ORM\Tests\models\TestUserListModel;
 use EasySwoole\ORM\Utility\Schema\Table;
 use PHPUnit\Framework\TestCase;
-
 
 class WithTest extends TestCase
 {
@@ -35,7 +31,23 @@ class WithTest extends TestCase
         $this->assertTrue($connection === $this->connection);
     }
 
-    public function testAdd()
+    private function truncateTables()
+    {
+        $tables = [
+            'test_user_model',
+            'user_test_list',
+            'test_a',
+            'test_b',
+            'test_c'
+        ];
+        foreach ($tables as $table) {
+            $query = new QueryBuilder();
+            $query->raw('truncate ' . $table);
+            DbManager::getInstance()->query($query);
+        }
+    }
+
+    private function mockAdd()
     {
         $test_user_model = TestRelationModel::create();
         $test_user_model->name = 'gaobinzhan';
@@ -43,6 +55,7 @@ class WithTest extends TestCase
         $test_user_model->addTime = ($time = date('Y-m-d H:i:s'));
         $test_user_model->state = 2;
         $test_user_model->save();
+
         $user_list = TestUserListModel::create();
         $user_list->name = 'gaobinzhan';
         $user_list->age = 20;
@@ -56,6 +69,7 @@ class WithTest extends TestCase
         $test_user_model->addTime = ($time = date('Y-m-d H:i:s'));
         $test_user_model->state = 2;
         $test_user_model->save();
+
         $user_list = TestUserListModel::create();
         $user_list->name = 'gaobinzhan1';
         $user_list->age = 20;
@@ -66,6 +80,9 @@ class WithTest extends TestCase
 
     public function testHasOne()
     {
+        $this->truncateTables();
+        $this->mockAdd();
+
         $model = TestRelationModel::create();
         $result = $model->with(['hasOneEqName' => 'gaobinzhan1'])->where(['name' => 'gaobinzhan'])->get()->toArray(null, false);
         $this->assertEmpty($result['hasOneEqName']);
@@ -78,6 +95,9 @@ class WithTest extends TestCase
 
     public function testHasMany()
     {
+        $this->truncateTables();
+        $this->mockAdd();
+
         $user_list = TestUserListModel::create();
         $user_list->name = 'gaobinzhan';
         $user_list->age = 20;
@@ -95,6 +115,8 @@ class WithTest extends TestCase
 
     public function testCreateTable()
     {
+        $this->truncateTables();
+        $this->mockAdd();
 
         // 主表a b副表 c为b副表
         $sql = "SHOW TABLES LIKE 'test_a';";
@@ -103,14 +125,7 @@ class WithTest extends TestCase
         $data = $this->connection->defer()->query($query);
 
         if (empty($data->getResult())) {
-            $tableDDL = new Table('test_a');
-            $tableDDL->colInt('id', 11)->setIsPrimaryKey()->setIsAutoIncrement();
-            $tableDDL->colVarChar('a_name', 255);
-            $tableDDL->setIfNotExists();
-            $sql = $tableDDL->__createDDL();
-            $query->raw($sql);
-            $data = $this->connection->defer()->query($query);
-            $this->assertTrue($data->getResult());
+
         }
 
         $sql = "SHOW TABLES LIKE 'test_b';";
@@ -150,13 +165,25 @@ class WithTest extends TestCase
 
     public function testWithToArray()
     {
-        $aId = TestA::create()->data(['a_name' => 'testA'])->save();
-        $bId1 = TestB::create()->data(['a_id' => $aId, 'b_name' => 'testB1'])->save();
-        $bId2 = TestB::create()->data(['a_id' => $aId, 'b_name' => 'testB2'])->save();
-        $cId1 = TestC::create()->data(['b_id' => $bId1, 'c_name' => 'testC1'])->save();
-        $cId2 = TestC::create()->data(['b_id' => $bId1, 'c_name' => 'testC2'])->save();
-        $cId3 = TestC::create()->data(['b_id' => $bId2, 'c_name' => 'testC1'])->save();
-        $cId4 = TestC::create()->data(['b_id' => $bId2, 'c_name' => 'testC2'])->save();
+        $this->truncateTables();
+        $this->mockAdd();
+
+        $aId = 1;
+        TestA::create()->data(['id' => $aId, 'a_name' => 'testA'])->save();
+
+        $bId1 = 1;
+        $bId2 = 2;
+        TestB::create()->data(['id' => $bId1, 'a_id' => $aId, 'b_name' => 'testB1'])->save();
+        TestB::create()->data(['id' => $bId2, 'a_id' => $aId, 'b_name' => 'testB2'])->save();
+
+        $cId1 = 1;
+        $cId2 = 2;
+        $cId3 = 3;
+        $cId4 = 4;
+        TestC::create()->data(['id' => $cId1, 'b_id' => $bId1, 'c_name' => 'testC1'])->save();
+        TestC::create()->data(['id' => $cId2, 'b_id' => $bId1, 'c_name' => 'testC2'])->save();
+        TestC::create()->data(['id' => $cId3, 'b_id' => $bId2, 'c_name' => 'testC1'])->save();
+        TestC::create()->data(['id' => $cId4, 'b_id' => $bId2, 'c_name' => 'testC2'])->save();
 
         $testAM = TestA::create();
 
@@ -164,53 +191,57 @@ class WithTest extends TestCase
         // get
         $result = $testAM->with('hasOneList')->get($aId)->toArray(null, false);
         $this->assertEquals('testB1-bar-b', $result['hasOneList']['b_name']);
-        $this->assertEquals('testC1', $result['hasOneList']['c_name']);
+        $this->assertEquals('testC2', $result['hasOneList']['c_name']);
+
         $result = $testAM->with('hasOneList')->get($aId)->toArray(null, null);
         $this->assertTrue(!isset($result['hasOneList']));
+
         $result = $testAM->with(['hasOneJoinList'], false)->field('*,test_a.id as aid,test_b.id as bid')->join('test_b', 'test_b.a_id = test_a.id', 'left')->get()->toArray(false, false);
         $this->assertEquals($aId, $result['aid']);
-        $this->assertEquals($bId1, $result['bid']);
-        $this->assertEquals($cId1, $result['hasOneJoinList']['cid']);
+        $this->assertEquals($bId2, $result['bid']);
+        $this->assertEquals($cId3, $result['hasOneJoinList']['cid']);
 
         // all
         $result = $testAM->with('hasOneList')->all()->toArray(null, false);
         $this->assertEquals('testB2-bar-b', $result[0]['hasOneList']['b_name']);
-        $this->assertEquals('testC2', $result[0]['hasOneList']['c_name']);
+        $this->assertEquals('testC1', $result[0]['hasOneList']['c_name']);
         $result = $testAM->with('hasOneList')->all()->toArray(null, null);
         $this->assertTrue(!isset($result[0]['hasOneList']));
         $result = $testAM->with(['hasOneJoinList'], false)->field('*,test_a.id as aid,test_b.id as bid')->join('test_b', 'test_b.a_id = test_a.id', 'left')->all()->toArray(false, false);
         $this->assertEquals($aId, $result[0]['aid']);
-        $this->assertEquals($bId1, $result[0]['bid']);
-        $this->assertEquals($cId2, $result[0]['hasOneJoinList']['cid']);
+        $this->assertEquals($bId2, $result[0]['bid']);
+        $this->assertEquals($cId4, $result[0]['hasOneJoinList']['cid']);
 
         // hasMany
         // get
         $result = $testAM->with('hasManyList')->get($aId)->toArray(null, false);
         $this->assertEquals('testB1-bar-b', $result['hasManyList'][0]['b_name']);
-        $this->assertEquals('testC1', $result['hasManyList'][0]['c_name']);
+        $this->assertEquals('testC2', $result['hasManyList'][0]['c_name']);
         $result = $testAM->with('hasManyList')->get($aId)->toArray(null, null);
         $this->assertTrue(!isset($result['hasManyList']));
+
         $result = $testAM->with(['hasManyJoinList'], false)->field('*,test_a.id as aid,test_b.id as bid')->join('test_b', 'test_b.a_id = test_a.id', 'left')->get()->toArray(false, false);
         $this->assertEquals($aId, $result['aid']);
+        $this->assertEquals($bId2, $result['bid']);
+        $this->assertEquals($cId3, $result['hasManyJoinList'][0]['cid']);
 
-
-        $this->assertEquals($bId1, $result['bid']);
-
-        $this->assertEquals($cId1, $result['hasManyJoinList'][0]['cid']);
         // all
         $result = $testAM->with('hasManyList')->all()->toArray(null, false);
         $this->assertEquals('testB1-bar-b', $result[0]['hasManyList'][0]['b_name']);
-        $this->assertEquals('testC1', $result[0]['hasManyList'][0]['c_name']);
+        $this->assertEquals('testC2', $result[0]['hasManyList'][0]['c_name']);
         $result = $testAM->with('hasManyList')->all()->toArray(null, null);
         $this->assertTrue(!isset($result[0]['hasManyList']));
         $result = $testAM->with(['hasManyJoinList'], false)->field('*,test_a.id as aid,test_b.id as bid')->join('test_b', 'test_b.a_id = test_a.id', 'left')->all()->toArray(false, false);
         $this->assertEquals($aId, $result[0]['aid']);
-        $this->assertEquals($bId1, $result[0]['bid']);
-        $this->assertEquals($cId1, $result[0]['hasManyJoinList'][0]['cid']);
+        $this->assertEquals($bId2, $result[0]['bid']);
+        $this->assertEquals($cId3, $result[0]['hasManyJoinList'][0]['cid']);
     }
 
     public function testDeleteAll()
     {
+        $this->truncateTables();
+        $this->mockAdd();
+
         $res = TestRelationModel::create()->destroy(null, true);
         $this->assertIsInt($res);
         $res = TestUserListModel::create()->destroy(null, true);

@@ -84,7 +84,7 @@ trait Attribute
             throw new Exception("Table name is require for model ".static::class);
         }
         $tableObjectGeneration = new TableObjectGeneration($connection, $this->tableName(),$this->client);
-        $schemaInfo = $tableObjectGeneration->generationTable();
+        $schemaInfo = $tableObjectGeneration->generationTable($connectionName);
         self::$schemaInfoList[$key] = $schemaInfo;
         return self::$schemaInfoList[$key];
     }
@@ -94,12 +94,12 @@ trait Attribute
      * @param mixed $offset
      * @return bool
      */
-    public function offsetExists($offset)
+    public function offsetExists(mixed $offset): bool
     {
         return $this->__isset($offset);
     }
 
-    public function offsetGet($offset)
+    public function offsetGet(mixed $offset): mixed
     {
         return $this->getAttr($offset);
     }
@@ -110,9 +110,9 @@ trait Attribute
      * @return bool
      * @throws Exception
      */
-    public function offsetSet($offset, $value)
+    public function offsetSet(mixed $offset, mixed $value): void
     {
-        return $this->setAttr($offset, $value);
+        $this->setAttr($offset, $value);
     }
 
 
@@ -121,16 +121,16 @@ trait Attribute
      * @return bool
      * @throws Exception
      */
-    public function offsetUnset($offset)
+    public function offsetUnset(mixed $offset): void
     {
-        return $this->setAttr($offset, null);
+        $this->setAttr($offset, null);
     }
 
     /**
      * json序列化方法
      * @return array|mixed
      */
-    public function jsonSerialize()
+    public function jsonSerialize(): mixed
     {
         return $this->toArray(false, false);
     }

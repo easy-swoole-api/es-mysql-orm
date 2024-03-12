@@ -5,7 +5,6 @@
  * Date: 2019/10/28 0028
  * Time: 18:52
  */
-
 namespace EasySwoole\ORM\Tests;
 
 use EasySwoole\ORM\Db\Config;

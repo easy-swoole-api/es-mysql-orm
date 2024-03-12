@@ -8,7 +8,6 @@
 
 namespace EasySwoole\ORM\Tests;
 
-use EasySwoole\Mysqli\QueryBuilder;
 use EasySwoole\ORM\Db\Config;
 use EasySwoole\ORM\Db\Connection;
 use EasySwoole\ORM\DbManager;

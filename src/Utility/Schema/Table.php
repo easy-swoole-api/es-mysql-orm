@@ -2,33 +2,36 @@
 
 namespace EasySwoole\ORM\Utility\Schema;
 
+use EasySwoole\DDL\Blueprint\Table as DDLTable;
+use EasySwoole\DDL\Blueprint\Create\Column as DDLCreateColumn;
+use EasySwoole\DDL\Enum\DataType;
+
 /**
  * 数据表结构
  * Class Table
  * @package EasySwoole\ORM\Utility\Schema
  */
-class Table extends \EasySwoole\DDL\Blueprint\Table
+class Table extends DDLTable
 {
-
     /**
      * 注入自定义的column
      * addColumn
-     * @param \EasySwoole\DDL\Blueprint\Column $column
-     * @author Tioncico
-     * Time: 15:01
+     * @param Column $column
      */
-    function addColumn(\EasySwoole\DDL\Blueprint\Column $column){
+    public function addColumn(DDLCreateColumn $column): DDLTable
+    {
         $this->columns[$column->getColumnName()] = $column;
+        return $this;
     }
 
     /**
      * 返回自定义的Column
      * 以便扩展该类的处理方法
      * @param string $columnName
-     * @param string $columnType
-     * @return \EasySwoole\DDL\Blueprint\Column|Column
+     * @param DataType $columnType
+     * @return Column
      */
-    function createColumn(string $columnName, string $columnType)
+    public function createColumn(string $columnName, DataType $columnType)
     {
         return new Column($columnName, $columnType);
     }
@@ -39,9 +42,9 @@ class Table extends \EasySwoole\DDL\Blueprint\Table
      * @param string|null $indexName
      * @param $indexType
      * @param $indexColumns
-     * @return \EasySwoole\DDL\Blueprint\Index
+     * @return \EasySwoole\DDL\Blueprint\Create\Index
      */
-    function createIndex(?string $indexName, $indexType, $indexColumns)
+    public function createIndex(?string $indexName, $indexType, $indexColumns)
     {
         return parent::createIndex($indexName, $indexType, $indexColumns);
     }
@@ -70,7 +73,7 @@ class Table extends \EasySwoole\DDL\Blueprint\Table
      */
     public function getEngine(): string
     {
-        return $this->engine;
+        return $this->engine->value;
     }
 
     /**
@@ -79,7 +82,7 @@ class Table extends \EasySwoole\DDL\Blueprint\Table
      */
     public function getCharset(): string
     {
-        return $this->charset;
+        return $this->charset->value;
     }
 
     /**

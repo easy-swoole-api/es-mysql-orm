@@ -1,7 +1,5 @@
 <?php
-
 namespace EasySwoole\ORM\Tests;
-
 
 use EasySwoole\Mysqli\QueryBuilder;
 use EasySwoole\ORM\AbstractModel;
@@ -70,11 +68,10 @@ class WhereTest extends TestCase
 
 
         try {
-
             $idStrings = implode(', ', $ids);
             TestWhereModel::create()->where('id', $idStrings, 'IN')->all();
         } catch (\Throwable $e) {
-            $this->assertEquals('Invalid argument supplied for foreach()', $e->getMessage());
+            $this->assertEquals('foreach() argument must be of type array|object, string given', $e->getMessage());
         }
     }
 

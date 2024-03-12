@@ -9,7 +9,10 @@
 namespace EasySwoole\ORM\Tests\models;
 
 
+use EasySwoole\DDL\Blueprint\Table;
+use EasySwoole\Mysqli\QueryBuilder;
 use EasySwoole\ORM\AbstractModel;
+use EasySwoole\ORM\DbManager;
 use EasySwoole\Utility\Str;
 
 /**
@@ -31,5 +34,24 @@ class TestUserListModel extends AbstractModel
     public function getAppendOneAttr()
     {
         return "siam_append";
+    }
+
+    public function __construct(array $data = [])
+    {
+        $query = new QueryBuilder();
+        $tableDDL = new Table($this->tableName);
+        $tableDDL->setIfNotExists();
+        $tableDDL->colInt('id', 11)->setIsPrimaryKey()->setIsAutoIncrement();
+        $tableDDL->colVarChar('name', 255);
+        $tableDDL->colTinyInt('age', 1);
+        $tableDDL->colDateTime('addTime');
+        $tableDDL->colTinyInt('state', 1);
+        $tableDDL->setIfNotExists();
+
+        $sql = $tableDDL->__createDDL();
+        $query->raw($sql);
+        DbManager::getInstance()->query($query);
+
+        parent::__construct($data);
     }
 }

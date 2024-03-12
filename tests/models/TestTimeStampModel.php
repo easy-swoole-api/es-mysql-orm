@@ -9,7 +9,10 @@
 namespace EasySwoole\ORM\Tests\models;
 
 
+use EasySwoole\Mysqli\QueryBuilder;
 use EasySwoole\ORM\AbstractModel;
+use EasySwoole\ORM\DbManager;
+use EasySwoole\ORM\Utility\Schema\Table;
 
 /**
  * Class TestTimeStampModel

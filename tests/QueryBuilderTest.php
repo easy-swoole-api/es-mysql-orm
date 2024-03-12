@@ -44,12 +44,14 @@ class QueryBuilderTest extends TestCase
             'addTime' => $time,
             'state' => 1
         ])->save();
+
         $this->ids[] = TestRelationModel::create()->data([
             'name' => 'gaobinzhan',
             'age' => 20,
             'addTime' => $time,
             'state' => 1
         ])->save();
+
         $this->assertEquals("INSERT  INTO `test_user_model` (`name`, `age`, `addTime`, `state`)  VALUES ('gaobinzhan', 20, '{$time}', 1)", $model->lastQuery()->getLastQuery());
     }
 

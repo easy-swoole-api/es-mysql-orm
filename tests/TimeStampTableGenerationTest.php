@@ -8,12 +8,10 @@
 
 namespace EasySwoole\ORM\Tests;
 
-
 use PHPUnit\Framework\TestCase;
 use EasySwoole\Mysqli\QueryBuilder;
 use EasySwoole\ORM\Db\Config;
 use EasySwoole\ORM\Db\Connection;
-use EasySwoole\ORM\DbManager;
 use EasySwoole\ORM\Utility\Schema\Table;
 use EasySwoole\ORM\Utility\TableObjectGeneration;
 

@@ -9,6 +9,8 @@ namespace EasySwoole\ORM\Tests\models;
 
 use EasySwoole\Mysqli\QueryBuilder;
 use EasySwoole\ORM\AbstractModel;
+use EasySwoole\ORM\DbManager;
+use EasySwoole\ORM\Utility\Schema\Table;
 
 class TestA extends AbstractModel
 {
@@ -40,5 +42,20 @@ class TestA extends AbstractModel
         return $this->hasMany(TestC::class, function (QueryBuilder $queryBuilder) {
             $queryBuilder->fields('*,test_c.id as cid');
         }, 'bid', 'b_id');
+    }
+
+    public function __construct(array $data = [])
+    {
+        $tableDDL = new Table('test_a');
+        $tableDDL->colInt('id', 11)->setIsPrimaryKey()->setIsAutoIncrement();
+        $tableDDL->colVarChar('a_name', 255);
+        $tableDDL->setIfNotExists();
+        $sql = $tableDDL->__createDDL();
+
+        $query = new QueryBuilder();
+        $query->raw($sql);
+        DbManager::getInstance()->query($query);
+
+        parent::__construct($data);
     }
 }

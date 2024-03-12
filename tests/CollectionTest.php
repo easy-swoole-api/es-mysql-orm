@@ -8,7 +8,6 @@
 
 namespace EasySwoole\ORM\Tests;
 
-
 use EasySwoole\ORM\AbstractModel;
 use EasySwoole\ORM\Collection\Collection;
 use EasySwoole\ORM\Db\Config;
@@ -165,5 +164,4 @@ class CollectionTest extends TestCase
 
         TestUserListGetterModel::create()->destroy([], true);
     }
-
 }

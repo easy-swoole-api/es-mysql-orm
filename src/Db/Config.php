@@ -4,6 +4,8 @@
 namespace EasySwoole\ORM\Db;
 
 
+use EasySwoole\ORM\Exception\Exception;
+
 class Config extends \EasySwoole\Pool\Config
 {
     protected $host;
@@ -18,6 +20,8 @@ class Config extends \EasySwoole\Pool\Config
     protected $strict_type = false; // 开启严格模式，返回的字段将自动转为数字类型
     protected $fetch_mode = false;
     protected $returnCollection = false; // 返回结果为结果集
+
+    protected $useMysqli = false;
 
     /**
      * @return mixed
@@ -40,7 +44,7 @@ class Config extends \EasySwoole\Pool\Config
             $this->host = substr($host, 0, $index);
             $this->port = intval(substr($host, $index + 1));
         }
-        return $this;        
+        return $this;
     }
 
     /**
@@ -219,4 +223,19 @@ class Config extends \EasySwoole\Pool\Config
         $this->returnCollection = $returnCollection;
     }
 
+    public function isUseMysqli(): bool
+    {
+        return $this->useMysqli;
+    }
+
+    public function setUseMysqli(bool $useMysqli): void
+    {
+        if ($useMysqli) {
+            if (!extension_loaded('mysqli')) {
+                throw new Exception("Please install the php-mysqli extension first");
+            }
+        }
+
+        $this->useMysqli = $useMysqli;
+    }
 }

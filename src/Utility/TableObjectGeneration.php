@@ -8,7 +8,10 @@
 
 namespace EasySwoole\ORM\Utility;
 
+use EasySwoole\DDL\Enum\DataType;
 use EasySwoole\ORM\Db\ClientInterface;
+use EasySwoole\ORM\Db\MysqliClient;
+use EasySwoole\ORM\DbManager;
 use EasySwoole\ORM\Exception\Exception;
 use EasySwoole\ORM\Utility\Schema\Column;
 use EasySwoole\Mysqli\QueryBuilder;
@@ -35,7 +38,7 @@ class TableObjectGeneration
 
     }
 
-    public function getTableColumnsInfo()
+    public function getTableColumnsInfo(string $connectionName = 'default')
     {
         $query = new QueryBuilder();
         $query->raw("show full columns from {$this->tableName}");
@@ -43,7 +46,7 @@ class TableObjectGeneration
         if ($this->client instanceof ClientInterface) {
             $data = $this->client->query($query);
         } else {
-            $data = $this->connection->defer()->query($query);
+            $data = DbManager::getInstance()->query($query, true, $connectionName);
         }
 
         if ($this->connection->getConfig()->isFetchMode()) {
@@ -62,9 +65,9 @@ class TableObjectGeneration
         return $data->getResult();
     }
 
-    public function generationTable()
+    public function generationTable(string $connectionName = 'default')
     {
-        $this->getTableColumnsInfo();
+        $this->getTableColumnsInfo($connectionName);
         $columns = $this->tableColumns;
         $table = new Table($this->tableName);
         foreach ($columns as $column) {
@@ -86,7 +89,14 @@ class TableObjectGeneration
             $type = $columnTypeArr[0];
             $limit = null;
         }
-        $columnObj = new Column($column['Field'], $type);
+
+        $dataTypeEnum = DataType::tryFrom($type);
+
+        if (!$dataTypeEnum) {
+            throw new Exception("Data type '{$type}' is not supported yet");
+        }
+
+        $columnObj = new Column($column['Field'], $dataTypeEnum);
 
         //是否无符号
         if (in_array('unsigned', $columnTypeArr)) {

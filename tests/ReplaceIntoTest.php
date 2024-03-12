@@ -1,8 +1,5 @@
 <?php
-
-
 namespace EasySwoole\ORM\Tests;
-
 
 use EasySwoole\ORM\Db\Config;
 use EasySwoole\ORM\Db\Connection;
@@ -10,6 +7,7 @@ use EasySwoole\ORM\DbManager;
 use EasySwoole\ORM\Exception\Exception;
 use EasySwoole\ORM\Tests\models\TestUserModel;
 use PHPUnit\Framework\TestCase;
+use mysqli_sql_exception;
 
 class ReplaceIntoTest extends TestCase
 {
@@ -44,12 +42,17 @@ class ReplaceIntoTest extends TestCase
         $id = $model->data($data)->save();
         $this->assertIsInt($id);
 
-        $this->expectException(Exception::class);
-        $this->expectExceptionMessage("SQLSTATE[23000] [1062] Duplicate entry '{$id}' for key 'PRIMARY' [INSERT  INTO `test_user_model` (`name`, `age`, `addTime`, `state`, `id`)  VALUES ('史迪仔', 21, '{$addTime}', 1, {$id})]");
-
-        $model->data($data)->save();
-
-        $this->fail('replace test exception error');
+        if (!empty(MYSQL_CONFIG['useMysqli'])) {
+            $this->expectException(mysqli_sql_exception::class);
+            $this->expectExceptionMessage("Duplicate entry '{$id}' for key 'test_user_model.PRIMARY'");
+            $model->data($data)->save();
+            $this->fail('replace test exception error');
+        } else {
+            $this->expectException(Exception::class);
+            $this->expectExceptionMessage("SQLSTATE[23000] [1062] Duplicate entry '{$id}' for key 'test_user_model.PRIMARY' [INSERT  INTO `test_user_model` (`name`, `age`, `addTime`, `state`, `id`)  VALUES ('史迪仔', 21, '{$addTime}', 1, $id)]");
+            $model->data($data)->save();
+            $this->fail('replace test exception error');
+        }
     }
 
     public function testReplaceInto()

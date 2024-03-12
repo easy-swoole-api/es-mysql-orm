@@ -2,12 +2,14 @@
 
 namespace EasySwoole\ORM\Utility\Schema;
 
+use EasySwoole\DDL\Blueprint\Create\Column as DDLCreateColumn;
+
 /**
  * 字段结构
  * Class Column
  * @package EasySwoole\ORM\Utility\Schema
  */
-class Column extends \EasySwoole\DDL\Blueprint\Column
+class Column extends DDLCreateColumn
 {
     /**
      * ColumnName Getter
@@ -24,7 +26,7 @@ class Column extends \EasySwoole\DDL\Blueprint\Column
      */
     public function getColumnType()
     {
-        return $this->columnType;
+        return $this->columnType->value;
     }
 
     /**

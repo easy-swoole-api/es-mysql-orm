@@ -12,8 +12,6 @@ use EasySwoole\ORM\Db\Config;
 use EasySwoole\ORM\Db\Connection;
 use EasySwoole\ORM\DbManager;
 use PHPUnit\Framework\TestCase;
-
-
 use EasySwoole\ORM\Tests\models\TestUserListModel;
 use EasySwoole\ORM\Tests\models\TestRelationModel;
 

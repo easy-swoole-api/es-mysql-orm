@@ -41,7 +41,7 @@ class ModelTest extends TestCase
         $this->createTestTable();
     }
 
-    function createTestTable()
+    public function createTestTable()
     {
         $query = new QueryBuilder();
         $tableDDL = new Table($this->tableName);
@@ -57,15 +57,14 @@ class ModelTest extends TestCase
         $this->assertTrue($data->getResult());
     }
 
-
-    function testGetSchemaInfo()
+    public function testGetSchemaInfo()
     {
         $testUserModel = new TestUserModel();
         $schemaInfo = $testUserModel->schemaInfo();
         $this->assertTrue($schemaInfo instanceof Table);
     }
 
-    function testAdd()
+    public function testAdd()
     {
         $testUserModel = new TestUserModel();
         $testUserModel->state = 1;
@@ -82,7 +81,7 @@ class ModelTest extends TestCase
      * @author Tioncico
      * Time: 15:41
      */
-    function testUpdate()
+    public function testUpdate()
     {
         $testUserModel = new TestUserModel();
 
@@ -109,7 +108,7 @@ class ModelTest extends TestCase
      * @author XueSi
      * Time: 18:04
      */
-    function testUpdateWithLimit()
+    public function testUpdateWithLimit()
     {
         $testUserModel = new TestUserModel();
 
@@ -151,14 +150,14 @@ class ModelTest extends TestCase
         $this->assertTrue($result);
     }
 
-    function testGetAll()
+    public function testGetAll()
     {
         $testUserModel = new TestUserModel();
         $data = $testUserModel->all();
         $this->assertIsArray($data);
     }
 
-    function testDelete()
+    public function testDelete()
     {
         $testUserModel = new TestUserModel();
 
@@ -172,5 +171,4 @@ class ModelTest extends TestCase
         $user = $user->get(['id' => $user->id]);
         $this->assertNull($user);
     }
-
 }

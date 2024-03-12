@@ -2,7 +2,6 @@
 /**
  *  ResultColumn  ResultIndexBy ResultScalar
  */
-
 namespace EasySwoole\ORM\Tests;
 
 use EasySwoole\ORM\Db\Config;

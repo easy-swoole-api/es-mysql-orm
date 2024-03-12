@@ -8,10 +8,7 @@
 
 namespace EasySwoole\ORM\Tests;
 
-
 use PHPUnit\Framework\TestCase;
-
-
 use EasySwoole\ORM\Tests\models\TestFunctionFieldNameModel;
 
 class FieldNameEQFunctionNameTest extends TestCase

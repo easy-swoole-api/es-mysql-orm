@@ -5,9 +5,7 @@
  * Date: 2020/6/8
  * Time: 10:07
  */
-
 namespace EasySwoole\ORM\Tests;
-
 
 use EasySwoole\ORM\Db\Config;
 use EasySwoole\ORM\Db\Connection;

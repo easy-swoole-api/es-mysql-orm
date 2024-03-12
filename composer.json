@@ -1,5 +1,5 @@
 {
-    "name": "easyswoole/orm",
+    "name": "easyapi/es-mysql-orm",
     "type": "library",
     "description": "php stander lib",
     "keywords": [
@@ -14,16 +14,19 @@
         {
             "name": "YF",
             "email": "291323003@qq.com"
+        },
+        {
+            "name": "XueSi",
+            "email": "1592328848@qq.com"
         }
     ],
     "require": {
-        "php": ">=7.1.0",
-        "ext-swoole": ">=4.4.7",
+        "php": ">=8.1.0",
+        "ext-swoole": "^4.4.7|^5.0",
         "ext-json": "*",
         "easyswoole/component": "^2.0",
-        "easyswoole/mysqli": "^2.0",
-        "easyswoole/ddl": "^1.0",
-        "easyswoole/pool": "^1.0"
+        "easyswoole/mysqli": "4.x",
+        "easyswoole/pool": "^2.0"
     },
     "require-dev": {
         "easyswoole/phpunit": "^1.0",

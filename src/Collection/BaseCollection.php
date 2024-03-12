@@ -14,6 +14,7 @@ use Countable;
 use EasySwoole\ORM\AbstractModel;
 use IteratorAggregate;
 use JsonSerializable;
+use Traversable;
 
 class BaseCollection implements ArrayAccess, Countable, IteratorAggregate, JsonSerializable
 {
@@ -376,7 +377,7 @@ class BaseCollection implements ArrayAccess, Countable, IteratorAggregate, JsonS
      * @param  mixed $offset 键名
      * @return bool
      */
-    public function offsetExists($offset)
+    public function offsetExists(mixed $offset): bool
     {
         return array_key_exists($offset, $this->items);
     }
@@ -387,7 +388,7 @@ class BaseCollection implements ArrayAccess, Countable, IteratorAggregate, JsonS
      * @param  mixed $offset 键名
      * @return mixed
      */
-    public function offsetGet($offset)
+    public function offsetGet(mixed $offset): mixed
     {
         return $this->items[$offset];
     }
@@ -399,7 +400,7 @@ class BaseCollection implements ArrayAccess, Countable, IteratorAggregate, JsonS
      * @param  mixed $value  值
      * @return void
      */
-    public function offsetSet($offset, $value)
+    public function offsetSet(mixed $offset, mixed $value): void
     {
         if (is_null($offset)) {
             $this->items[] = $value;
@@ -414,7 +415,7 @@ class BaseCollection implements ArrayAccess, Countable, IteratorAggregate, JsonS
      * @param  mixed $offset 键名
      * @return void
      */
-    public function offsetUnset($offset)
+    public function offsetUnset(mixed $offset): void
     {
         unset($this->items[$offset]);
     }
@@ -424,7 +425,7 @@ class BaseCollection implements ArrayAccess, Countable, IteratorAggregate, JsonS
      * @access public
      * @return int
      */
-    public function count()
+    public function count(): int
     {
         return count($this->items);
     }
@@ -434,7 +435,7 @@ class BaseCollection implements ArrayAccess, Countable, IteratorAggregate, JsonS
      * @access public
      * @return ArrayIterator
      */
-    public function getIterator()
+    public function getIterator(): Traversable
     {
         return new ArrayIterator($this->items);
     }
@@ -444,7 +445,7 @@ class BaseCollection implements ArrayAccess, Countable, IteratorAggregate, JsonS
      * @access public
      * @return array
      */
-    public function jsonSerialize()
+    public function jsonSerialize(): mixed
     {
         return $this->toArray();
     }
